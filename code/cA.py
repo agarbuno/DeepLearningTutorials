@@ -12,7 +12,8 @@
  squared Frobenius norm of the Jacobian of the hidden mapping h with
  respect to the visible units yields the contractive auto-encoder:
 
-      - \sum_{k=1}^d[ x_k \log z_k + (1-x_k) \log( 1-z_k)]  + \| \frac{\partial h(x)}{\partial x} \|^2
+      - \sum_{k=1}^d[ x_k \log z_k + (1-x_k) \log( 1-z_k)]
+      + \| \frac{\partial h(x)}{\partial x} \|^2
 
  References :
    - S. Rifai, P. Vincent, X. Muller, X. Glorot, Y. Bengio: Contractive
@@ -27,11 +28,9 @@
    Systems 19, 2007
 
 """
-import cPickle
-import gzip
 import os
 import sys
-import time
+import timeit
 
 import numpy
 
@@ -42,7 +41,10 @@ import theano.tensor as T
 from logistic_sgd import load_data
 from utils import tile_raster_images
 
-import PIL.Image
+try:
+    import PIL.Image as Image
+except ImportError:
+    import Image
 
 
 class cA(object):
@@ -76,11 +78,11 @@ class cA(object):
 
     def __init__(self, numpy_rng, input=None, n_visible=784, n_hidden=100,
                  n_batchsize=1, W=None, bhid=None, bvis=None):
-        """Initialize the cA class by specifying the number of visible units (the
-        dimension d of the input ), the number of hidden units ( the dimension
-        d' of the latent or hidden space ) and the contraction level. The
-        constructor also receives symbolic variables for the input, weights and
-        bias.
+        """Initialize the cA class by specifying the number of visible units
+        (the dimension d of the input), the number of hidden units (the
+        dimension d' of the latent or hidden space) and the contraction level.
+        The constructor also receives symbolic variables for the input, weights
+        and bias.
 
         :type numpy_rng: numpy.random.RandomState
         :param numpy_rng: number random generator used to generate weights
@@ -128,11 +130,14 @@ class cA(object):
             # 4*sqrt(6./(n_hidden+n_visible))the output of uniform if
             # converted using asarray to dtype
             # theano.config.floatX so that the code is runable on GPU
-            initial_W = numpy.asarray(numpy_rng.uniform(
-                      low=-4 * numpy.sqrt(6. / (n_hidden + n_visible)),
-                      high=4 * numpy.sqrt(6. / (n_hidden + n_visible)),
-                      size=(n_visible, n_hidden)),
-                                      dtype=theano.config.floatX)
+            initial_W = numpy.asarray(
+                numpy_rng.uniform(
+                    low=-4 * numpy.sqrt(6. / (n_hidden + n_visible)),
+                    high=4 * numpy.sqrt(6. / (n_hidden + n_visible)),
+                    size=(n_visible, n_hidden)
+                ),
+                dtype=theano.config.floatX
+            )
             W = theano.shared(value=initial_W, name='W', borrow=True)
 
         if not bvis:
@@ -155,7 +160,7 @@ class cA(object):
         self.W_prime = self.W.T
 
         # if no input is given, generate a variable representing the input
-        if input == None:
+        if input is None:
             # we use a matrix because we expect a minibatch of several
             # examples, each example being a row
             self.x = T.dmatrix(name='input')
@@ -183,7 +188,7 @@ class cA(object):
         hidden layer
 
         """
-        return  T.nnet.sigmoid(T.dot(hidden, self.W_prime) + self.b_prime)
+        return T.nnet.sigmoid(T.dot(hidden, self.W_prime) + self.b_prime)
 
     def get_cost_updates(self, contraction_level, learning_rate):
         """ This function computes the cost and the updates for one trainng
@@ -262,12 +267,16 @@ def test_cA(learning_rate=0.01, training_epochs=20,
     cost, updates = ca.get_cost_updates(contraction_level=contraction_level,
                                         learning_rate=learning_rate)
 
-    train_ca = theano.function([index], [T.mean(ca.L_rec), ca.L_jacob],
-                               updates=updates,
-                               givens={x: train_set_x[index * batch_size:
-                                                    (index + 1) * batch_size]})
+    train_ca = theano.function(
+        [index],
+        [T.mean(ca.L_rec), ca.L_jacob],
+        updates=updates,
+        givens={
+            x: train_set_x[index * batch_size: (index + 1) * batch_size]
+        }
+    )
 
-    start_time = time.clock()
+    start_time = timeit.default_timer()
 
     ############
     # TRAINING #
@@ -284,13 +293,13 @@ def test_cA(learning_rate=0.01, training_epochs=20,
         print 'Training epoch %d, reconstruction cost ' % epoch, numpy.mean(
             c_array[0]), ' jacobian norm ', numpy.mean(numpy.sqrt(c_array[1]))
 
-    end_time = time.clock()
+    end_time = timeit.default_timer()
 
     training_time = (end_time - start_time)
 
     print >> sys.stderr, ('The code for file ' + os.path.split(__file__)[1] +
                           ' ran for %.2fm' % ((training_time) / 60.))
-    image = PIL.Image.fromarray(tile_raster_images(
+    image = Image.fromarray(tile_raster_images(
         X=ca.W.get_value(borrow=True).T,
         img_shape=(28, 28), tile_shape=(10, 10),
         tile_spacing=(1, 1)))

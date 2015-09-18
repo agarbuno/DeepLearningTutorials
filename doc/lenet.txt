@@ -10,16 +10,16 @@ Convolutional Neural Networks (LeNet)
     `floatX`_, `downsample`_ , `conv2d`_, `dimshuffle`_. If you intend to run the
     code on GPU also read `GPU`_.
 
-    To run this example on a GPU, you need a good GPU. First, it need
-    at least 1G of GPU RAM and possibly more if your monitor is
+    To run this example on a GPU, you need a good GPU. It needs
+    at least 1GB of GPU RAM.  More may be required if your monitor is
     connected to the GPU.
-
-    Second, when the GPU is connected to the monitor, there is a limit
+    
+    When the GPU is connected to the monitor, there is a limit
     of a few seconds for each GPU function call. This is needed as
-    current GPU can't be used for the monitor while doing
-    computation. If there wasn't this limit, the screen would freeze
-    for too long and this look as if the computer froze. User don't
-    like this.  This example hit this limit with medium GPU. When the
+    current GPUs can't be used for the monitor while doing
+    computation. Without this limit, the screen would freeze
+    for too long and make it look as if the computer froze. 
+    This example hits this limit with medium-quality GPUs. When the
     GPU isn't connected to a monitor, there is no time limit. You can
     lower the batch size to fix the time out problem.
 
@@ -52,132 +52,131 @@ Convolutional Neural Networks (LeNet)
 Motivation
 ++++++++++
 
-Convolutional Neural Networks (CNN) are variants of MLPs which are inspired from
-biology. From Hubel and Wiesel's early work on the cat's visual cortex [Hubel68]_,
-we know there exists a complex arrangement of cells within the visual cortex.
-These cells are sensitive to small sub-regions of the input space, called a
-**receptive field**, and are tiled in such a way as to cover the entire visual
-field. These filters are local in input space and are thus better suited to
-exploit the strong spatially local correlation present in natural images.
+Convolutional Neural Networks (CNN) are biologically-inspired variants of MLPs.
+From Hubel and Wiesel's early work on the cat's visual cortex [Hubel68]_, we
+know the visual cortex contains a complex arrangement of cells. These cells are
+sensitive to small sub-regions of the visual field, called a *receptive
+field*. The sub-regions are tiled to cover the entire visual field. These
+cells act as local filters over the input space and are well-suited to exploit
+the strong spatially local correlation present in natural images.
 
-Additionally, two basic cell types have been identified: simple cells (S) and
-complex cells (C). Simple cells (S) respond maximally to specific edge-like
-stimulus patterns within their receptive field. Complex cells (C) have larger
-receptive fields and are locally invariant to the exact position of the
-stimulus.
+Additionally, two basic cell types have been identified: Simple cells respond
+maximally to specific edge-like patterns within their receptive field. Complex
+cells have larger receptive fields and are locally invariant to the exact
+position of the pattern.
 
-The visual cortex being the most powerful "vision" system in existence, it
-seems natural to emulate its behavior. Many such neurally inspired models can be
-found in the litterature. To name a few: the NeoCognitron [Fukushima]_, HMAX
-[Serre07]_ and LeNet-5 [LeCun98]_, which will be the focus of this tutorial.
+The animal visual cortex being the most powerful visual processing system in
+existence, it seems natural to emulate its behavior. Hence, many
+neurally-inspired models can be found in the literature. To name a few: the
+NeoCognitron [Fukushima]_, HMAX [Serre07]_ and LeNet-5 [LeCun98]_, which will
+be the focus of this tutorial.
 
 
 Sparse Connectivity
 +++++++++++++++++++
 
-CNNs exploit spatially local correlation by enforcing a local connectivity pattern between
-neurons of adjacent layers. The input hidden units in the m-th layer are
-connected to a local subset of units in the (m-1)-th layer, which have spatially
-contiguous receptive fields. We can illustrate this graphically as follows:
+CNNs exploit spatially-local correlation by enforcing a local connectivity
+pattern between neurons of adjacent layers. In other words, the inputs of
+hidden units in layer **m** are from a subset of units in layer **m-1**, units
+that have spatially contiguous receptive fields. We can illustrate this
+graphically as follows:
 
 .. figure:: images/sparse_1D_nn.png
     :align: center
 
-Imagine that layer **m-1** is the input retina.
-In the above, units in layer **m**
-have receptive fields of width 3 with respect to the input retina and are thus only
-connected to 3 adjacent neurons in the layer below (the retina).
-Units in layer **m** have
-a similar connectivity with the layer below. We say that their receptive
-field with respect to the layer below is also 3, but their receptive field
-with respect to the input is larger (it is 5).
-The architecture thus
-confines the learnt "filters" (corresponding to the input producing the strongest response) to be a spatially local pattern
-(since each unit is unresponsive to variations outside of its receptive field with respect to the retina).
-As shown above, stacking many such
-layers leads to "filters" (not anymore linear) which become increasingly "global" however (i.e
-spanning a larger region of pixel space). For example, the unit in hidden
-layer **m+1** can encode a non-linear feature of width 5 (in terms of pixel
-space).
+Imagine that layer **m-1** is the input retina. In the above figure, units in
+layer **m** have receptive fields of width 3 in the input retina and are thus
+only connected to 3 adjacent neurons in the retina layer. Units in layer
+**m+1** have a similar connectivity with the layer below. We say that their
+receptive field with respect to the layer below is also 3, but their receptive
+field with respect to the input is larger (5). Each unit is unresponsive to
+variations outside of its receptive field with respect to the retina. The
+architecture thus ensures that the learnt "filters" produce the strongest
+response to a spatially local input pattern.
+
+However, as shown above, stacking many such layers leads to (non-linear)
+"filters" that become increasingly "global" (i.e. responsive to a larger region
+of pixel space). For example, the unit in hidden layer **m+1** can encode a
+non-linear feature of width 5 (in terms of pixel space).
 
 
 Shared Weights
 ++++++++++++++
 
-In CNNs, each sparse filter :math:`h_i` is additionally replicated across the
-entire visual field. These "replicated" units form a **feature map**, which
-share the same parametrization, i.e. the same weight vector and the same bias.
+In addition, in CNNs, each filter :math:`h_i` is replicated across the entire
+visual field. These replicated units share the same parameterization (weight
+vector and bias) and form a *feature map*.
 
 .. figure:: images/conv_1D_nn.png
     :align: center
 
 In the above figure, we show 3 hidden units belonging to the same feature map.
-Weights of the same color are shared, i.e. are constrained to be identical.
-Gradient descent can still be used to learn such shared parameters, and
-requires only a small change to the original algorithm. The gradient of a
-shared weight is simply the sum of the gradients of the parameters being
-shared.
+Weights of the same color are shared---constrained to be identical. Gradient
+descent can still be used to learn such shared parameters, with only a small
+change to the original algorithm. The gradient of a shared weight is simply the
+sum of the gradients of the parameters being shared.
 
-Why are shared weights interesting ? Replicating units in this way allows for
-features to be detected regardless of their position in the visual field.
-Additionally, weight sharing offers a very efficient way to do this, since it
-greatly reduces the number of free parameters to learn. By controlling model
-capacity, CNNs tend to achieve better generalization on vision problems.
+Replicating units in this way allows for features to be detected *regardless
+of their position in the visual field.* Additionally, weight sharing increases
+learning efficiency by greatly reducing the number of free parameters being
+learnt. The constraints on the model enable CNNs to achieve better
+generalization on vision problems.
 
 
 Details and Notation
 ++++++++++++++++++++
 
-Conceptually, a feature map is obtained by convolving the input image with a
-linear filter, adding a bias term and then applying a non-linear function. If
-we denote the k-th feature map at a given layer as :math:`h^k`, whose filters
-are determined by the weights :math:`W^k` and bias :math:`b_k`, then the
-feature map :math:`h^k` is obtained as follows (for :math:`tanh` non-linearities):
+A feature map is obtained by repeated application of a function across
+sub-regions of the entire image, in other words, by *convolution* of the
+input image with a linear filter, adding a bias term and then applying a
+non-linear function. If we denote the k-th feature map at a given layer as
+:math:`h^k`, whose filters are determined by the weights :math:`W^k` and bias
+:math:`b_k`, then the feature map :math:`h^k` is obtained as follows (for
+:math:`tanh` non-linearities):
 
 .. math::
     h^k_{ij} = \tanh ( (W^k * x)_{ij} + b_k ).
 
 .. Note::
     Recall the following definition of convolution for a 1D signal.
-    :math:`o[n] = f[n]*g[n] = \sum_{u=-\infty}^{\infty} f[u] g[u-n] = \sum_{u=-\infty}^{\infty} f[n-u] g[u]`.
+    :math:`o[n] = f[n]*g[n] = \sum_{u=-\infty}^{\infty} f[u] g[n-u] = \sum_{u=-\infty}^{\infty} f[n-u] g[u]`.
 
     This can be extended to 2D as follows:
-    :math:`o[m,n] = f[m,n]*g[m,n] = \sum_{u=-\infty}^{\infty} \sum_{v=-\infty}^{\infty} f[u,v] g[u-m,v-n]`.
+    :math:`o[m,n] = f[m,n]*g[m,n] = \sum_{u=-\infty}^{\infty} \sum_{v=-\infty}^{\infty} f[u,v] g[m-u,n-v]`.
 
-To form a richer representation of the data, hidden layers are composed of
-a set of multiple feature maps, :math:`\{h^{(k)}, k=0..K\}`.
-The weights :math:`W` of this layer can be parametrized as a 4D tensor
-(destination feature map index, source feature map index, source vertical position index, source horizontal position index)
-and
-the biases :math:`b` as a vector (one element per destination feature map index).
-We illustrate this graphically as follows:
+To form a richer representation of the data, each hidden layer is composed of
+*multiple* feature maps, :math:`\{h^{(k)}, k=0..K\}`. The weights :math:`W` of
+a hidden layer can be represented in a 4D tensor containing elements for every
+combination of destination feature map, source feature map, source vertical
+position, and source horizontal position. The biases :math:`b` can be
+represented as a vector containing one element for every destination feature
+map. We illustrate this graphically as follows:
 
 .. figure:: images/cnn_explained.png
     :align: center
 
     **Figure 1**: example of a convolutional layer
 
-Here, we show two layers of a CNN, containing 4 feature maps at layer (m-1)
-and 2 feature maps (:math:`h^0` and :math:`h^1`) at layer m. Pixels (neuron outputs) in
-:math:`h^0` and :math:`h^1` (outlined as blue and red squares) are computed
-from pixels of layer (m-1) which fall within their 2x2 receptive field in the
-layer below (shown
-as colored rectangles). Notice how the receptive field spans all four input
-feature maps. The weights :math:`W^0` and :math:`W^1` of :math:`h^0` and
-:math:`h^1` are thus 3D weight tensors. The leading dimension indexes the
-input feature maps, while the other two refer to the pixel coordinates.
+The figure shows two layers of a CNN. **Layer m-1** contains four feature maps.
+**Hidden layer m** contains two feature maps (:math:`h^0` and :math:`h^1`).
+Pixels (neuron outputs) in :math:`h^0` and :math:`h^1` (outlined as blue and
+red squares) are computed from pixels of layer (m-1) which fall within their
+2x2 receptive field in the layer below (shown as colored rectangles). Notice
+how the receptive field spans all four input feature maps. The weights
+:math:`W^0` and :math:`W^1` of :math:`h^0` and :math:`h^1` are thus 3D weight
+tensors. The leading dimension indexes the input feature maps, while the other
+two refer to the pixel coordinates.
 
 Putting it all together, :math:`W^{kl}_{ij}` denotes the weight connecting
 each pixel of the k-th feature map at layer m, with the pixel at coordinates
 (i,j) of the l-th feature map of layer (m-1).
 
 
-The ConvOp
-++++++++++
+The Convolution Operator
+++++++++++++++++++++++++
 
 ConvOp is the main workhorse for implementing a convolutional layer in Theano.
-It is meant to replicate the behaviour of scipy.signal.convolve2d. Conceptually,
-the ConvOp (once instantiated) takes two symbolic inputs:
+ConvOp is used by ``theano.tensor.signal.conv2d``, which takes two symbolic inputs:
 
 
 * a 4D tensor corresponding to a mini-batch of input images. The shape of the
@@ -195,7 +194,12 @@ one of Figure 1. The input consists of 3 features maps (an RGB color image) of s
 
 .. code-block:: python
 
+        import theano
+        from theano import tensor as T
         from theano.tensor.nnet import conv
+
+        import numpy
+
         rng = numpy.random.RandomState(23455)
 
         # instantiate 4D tensor for input
@@ -256,15 +260,17 @@ Let's have a little bit of fun with this...
 
 .. code-block:: python
 
+        import numpy
         import pylab
         from PIL import Image
 
         # open random image of dimensions 639x516
         img = Image.open(open('doc/images/3wolfmoon.jpg'))
+        # dimensions are (height, width, channel)
         img = numpy.asarray(img, dtype='float64') / 256.
 
         # put image in 4D tensor of shape (1, 3, height, width)
-        img_ = img.swapaxes(0, 2).swapaxes(1, 2).reshape(1, 3, 639, 516)
+        img_ = img.transpose(2, 0, 1).reshape(1, 3, 639, 516)
         filtered_img = f(img_)
 
         # plot original image and first and second components of output
@@ -284,38 +290,39 @@ This should generate the following output.
 
 Notice that a randomly initialized filter acts very much like an edge detector!
 
-Also of note, remark that we use the same weight initialization formula as
-with the MLP. Weights are sampled randomly from a uniform distribution in the
-range [-1/fan-in, 1/fan-in], where fan-in is the number of inputs to a hidden
-unit. For MLPs, this was the number of units in the layer below. For CNNs
-however, we have to take into account the number of input feature maps and the
-size of the receptive fields.
+Note that we use the same weight initialization formula as with the MLP.
+Weights are sampled randomly from a uniform distribution in the range
+[-1/fan-in, 1/fan-in], where fan-in is the number of inputs to a hidden unit.
+For MLPs, this was the number of units in the layer below. For CNNs however, we
+have to take into account the number of input feature maps and the size of the
+receptive fields.
 
 
 MaxPooling
 ++++++++++
 
-Another important concept of CNNs is that of max-pooling, which is a form of
+Another important concept of CNNs is *max-pooling,* which is a form of
 non-linear down-sampling. Max-pooling partitions the input image into
 a set of non-overlapping rectangles and, for each such sub-region, outputs the
 maximum value.
 
-Max-pooling is useful in vision for two reasons: (1) it reduces the
-computational complexity for upper layers and (2) it provides a form of
-translation invariance. To understand the invariance argument, imagine
-cascading a max-pooling layer with a convolutional layer. There are 8
-directions in which one can translate the input image by a single pixel. If
-max-pooling is done over a 2x2 region, 3 out of these 8 possible
-configurations will produce exactly the same output at the convolutional
-layer. For max-pooling over a 3x3 window, this jumps to 5/8.
+Max-pooling is useful in vision for two reasons: 
+  #. By eliminating non-maximal values, it reduces computation for upper layers.
 
-Since it provides additional robustness to position, max-pooling is thus a
-"smart" way of reducing the dimensionality of intermediate representations.
+  #. It provides a form of translation invariance. Imagine
+     cascading a max-pooling layer with a convolutional layer. There are 8
+     directions in which one can translate the input image by a single pixel.
+     If max-pooling is done over a 2x2 region, 3 out of these 8 possible
+     configurations will produce exactly the same output at the convolutional
+     layer. For max-pooling over a 3x3 window, this jumps to 5/8.
 
-Max-pooling is done in Theano by way of ``theano.tensor.signal.downsample.max_pool_2d``.
-This function takes as input an N dimensional tensor (with N >= 2), a
-downscaling factor and performs max-pooling over the 2 trailing dimensions of
-the tensor.
+     Since it provides additional robustness to position, max-pooling is a
+     "smart" way of reducing the dimensionality of intermediate representations.
+
+Max-pooling is done in Theano by way of
+``theano.tensor.signal.downsample.max_pool_2d``. This function takes as input
+an N dimensional tensor (where N >= 2) and a downscaling factor and performs
+max-pooling over the 2 trailing dimensions of the tensor.
 
 An example is worth a thousand words:
 
@@ -366,10 +373,10 @@ This should generate the following output:
          [ 0.66379465  0.94459476  0.58655504]
          [ 0.90340192  0.80739129  0.39767684]]
 
-Note that contrary to most Theano code, the ``max_pool_2d`` operation is a little
-*special*. It requires the downscaling factor ``ds`` (tuple of length 2 containing
-downscaling factors for image width and height) to be known at graph build
-time. This may change in the near future.
+Note that compared to most Theano code, the ``max_pool_2d`` operation is a
+little *special*. It requires the downscaling factor ``ds`` (tuple of length 2
+containing downscaling factors for image width and height) to be known at graph
+build time. This may change in the near future.
 
 
 The Full Model: LeNet
@@ -393,6 +400,35 @@ tensors. These are then flattened to a 2D matrix of rasterized feature maps,
 to be compatible with our previous MLP implementation.
 
 
+.. note::
+    Note that the term "convolution" could corresponds to different mathematical operations:
+
+    1. `theano.tensor.nnet.conv2d
+       <http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv.conv2d>`_,
+       which is the most common one in almost all of the recent published
+       convolutional models.
+       In this operation, each output feature map is connected to each
+       input feature map by a different 2D filter, and its value is the sum of
+       the individual convolution of all inputs through the corresponding filter.
+
+    2. The convolution used in the original LeNet model: In this work,
+       each output feature map is only connected to a subset of input
+       feature maps.
+
+    3. The convolution used in signal processing:
+       `theano.tensor.signal.conv.conv2d
+       <http://deeplearning.net/software/theano/library/tensor/signal/conv.html#theano.tensor.signal.conv.conv2d>`_,
+       which works only on single channel inputs.
+
+    Here, we use the first operation, so this models differ slightly
+    from the original LeNet paper. One reason to use 2. would be to
+    reduce the amount of computation needed, but modern hardware makes
+    it as fast to have the full connection pattern. Another reason would
+    be to slightly reduce the number of free parameters, but we have
+    other regularization techniques at our disposal.
+
+
+
 Putting it All Together
 +++++++++++++++++++++++
 
@@ -400,62 +436,8 @@ We now have all we need to implement a LeNet model in Theano. We start with the
 LeNetConvPoolLayer class, which implements a {convolution + max-pooling}
 layer.
 
-.. code-block:: python
-
-    class LeNetConvPoolLayer(object):
-
-        def __init__(self, rng, input, filter_shape, image_shape, poolsize=(2, 2)):
-            """
-            Allocate a LeNetConvPoolLayer with shared variable internal parameters.
-
-            :type rng: numpy.random.RandomState
-            :param rng: a random number generator used to initialize weights
-
-            :type input: theano.tensor.dtensor4
-            :param input: symbolic image tensor, of shape image_shape
-
-            :type filter_shape: tuple or list of length 4
-            :param filter_shape: (number of filters, num input feature maps,
-                                  filter height,filter width)
-
-            :type image_shape: tuple or list of length 4
-            :param image_shape: (batch size, num input feature maps,
-                                 image height, image width)
-
-            :type poolsize: tuple or list of length 2
-            :param poolsize: the downsampling (pooling) factor (#rows,#cols)
-            """
-            assert image_shape[1] == filter_shape[1]
-            self.input = input
-
-            # initialize weight values: the fan-in of each hidden neuron is
-            # restricted by the size of the receptive fields.
-            fan_in =  numpy.prod(filter_shape[1:])
-            W_values = numpy.asarray(rng.uniform(
-                  low=-numpy.sqrt(3./fan_in),
-                  high=numpy.sqrt(3./fan_in),
-                  size=filter_shape), dtype=theano.config.floatX)
-            self.W = theano.shared(value=W_values, name='W')
-
-            # the bias is a 1D tensor -- one bias per output feature map
-            b_values = numpy.zeros((filter_shape[0],), dtype=theano.config.floatX)
-            self.b = theano.shared(value=b_values, name='b')
-
-            # convolve input feature maps with filters
-            conv_out = conv.conv2d(input, self.W,
-                    filter_shape=filter_shape, image_shape=image_shape)
-
-            # downsample each feature map individually, using maxpooling
-            pooled_out = downsample.max_pool_2d(conv_out, poolsize, ignore_border=True)
-
-            # add the bias term. Since the bias is a vector (1D array), we first
-            # reshape it to a tensor of shape (1, n_filters, 1, 1). Each bias will thus
-            # be broadcasted across mini-batches and feature map width & height
-            self.output = T.tanh(pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-
-            # store parameters of this layer
-            self.params = [self.W, self.b]
-
+.. literalinclude:: ../code/convolutional_mlp.py
+  :pyobject: LeNetConvPoolLayer
 
 Notice that when initializing the weight values, the fan-in is determined by
 the size of the receptive fields and the number of input feature maps.
@@ -464,83 +446,11 @@ Finally, using the LogisticRegression class defined in :doc:`logreg` and
 the HiddenLayer class defined in :doc:`mlp` , we can
 instantiate the network as follows.
 
-.. code-block:: python
-
-    learning_rate = 0.1
-    rng = numpy.random.RandomState(23455)
-
-    ishape = (28, 28)  # this is the size of MNIST images
-    batch_size = 20  # sized of the minibatch
-
-    # allocate symbolic variables for the data
-    x = T.matrix('x')  # rasterized images
-    y = T.lvector('y')  # the labels are presented as 1D vector of [long int] labels
-
-    ##############################
-    # BEGIN BUILDING ACTUAL MODE
-    ##############################
-
-    # Reshape matrix of rasterized images of shape (batch_size,28*28)
-    # to a 4D tensor, compatible with our LeNetConvPoolLayer
-    layer0_input = x.reshape((batch_size,1,28,28))
-
-    # Construct the first convolutional pooling layer:
-    # filtering reduces the image size to (28-5+1,28-5+1)=(24,24)
-    # maxpooling reduces this further to (24/2,24/2) = (12,12)
-    # 4D output tensor is thus of shape (20,20,12,12)
-    layer0 = LeNetConvPoolLayer(rng, input=layer0_input,
-            image_shape=(batch_size, 1, 28, 28),
-            filter_shape=(20, 1, 5, 5), poolsize=(2, 2))
-
-    # Construct the second convolutional pooling layer
-    # filtering reduces the image size to (12 - 5 + 1, 12 - 5 + 1)=(8, 8)
-    # maxpooling reduces this further to (8/2,8/2) = (4, 4)
-    # 4D output tensor is thus of shape (20,50,4,4)
-    layer1 = LeNetConvPoolLayer(rng, input=layer0.output,
-            image_shape=(batch_size, 20, 12, 12),
-            filter_shape=(50, 20, 5, 5), poolsize=(2, 2))
-
-    # the HiddenLayer being fully-connected, it operates on 2D matrices of
-    # shape (batch_size,num_pixels) (i.e matrix of rasterized images).
-    # This will generate a matrix of shape (20, 32 * 4 * 4) = (20, 512)
-    layer2_input = layer1.output.flatten(2)
-
-    # construct a fully-connected sigmoidal layer
-    layer2 = HiddenLayer(rng, input=layer2_input,
-                         n_in=50 * 4 * 4, n_out=500,
-                         activation=T.tanh    )
-
-    # classify the values of the fully-connected sigmoidal layer
-    layer3 = LogisticRegression(input=layer2.output, n_in=500, n_out=10)
-
-
-    # the cost we minimize during training is the NLL of the model
-    cost = layer3.negative_log_likelihood(y)
-
-    # create a function to compute the mistakes that are made by the model
-    test_model = theano.function([x, y], layer3.errors(y))
-
-    # create a list of all model parameters to be fit by gradient descent
-    params = layer3.params + layer2.params + layer1.params + layer0.params
-
-    # create a list of gradients for all model parameters
-    grads = T.grad(cost, params)
-
-    # train_model is a function that updates the model parameters by SGD
-    # Since this model has many parameters, it would be tedious to manually
-    # create an update rule for each model parameter. We thus create the updates
-    # dictionary by automatically looping over all (params[i],grads[i])  pairs.
-    updates = []
-    for param_i, grad_i in zip(params, grads):
-        updates.append((param_i, param_i - learning_rate * grad_i))
-    train_model = theano.function([index], cost, updates = updates,
-            givens={
-                x: train_set_x[index * batch_size: (index + 1) * batch_size],
-                y: train_set_y[index * batch_size: (index + 1) * batch_size]})
-
-
-
-We leave out the code, which performs the actual training and early-stopping,
+.. literalinclude:: ../code/convolutional_mlp.py
+  :start-after: start-snippet-1
+  :end-before: end-snippet-1
+  
+We leave out the code that performs the actual training and early-stopping,
 since it is exactly the same as with an MLP. The interested reader can
 nevertheless access the code in the 'code' folder of DeepLearningTutorials.
 

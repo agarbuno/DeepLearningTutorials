@@ -20,7 +20,7 @@ Download
 
 On each learning algorithm page, you will be able to download the corresponding files. If you want to download all of them at the same time, you can clone the git repository of the tutorial::
 
-    git clone git://github.com/lisa-lab/DeepLearningTutorials.git
+    git clone https://github.com/lisa-lab/DeepLearningTutorials.git
 
 
 .. _datasets:
@@ -96,7 +96,7 @@ MNIST Dataset
  memory and therefore bypassing the overhead.
  Because the datapoints and their labels are usually of different nature
  (labels are usually integers while datapoints are real numbers) we
- suggest to use different variables for labes and data. Also we recomand
+ suggest to use different variables for label and data. Also we recommend
  using different variables for the training set, validation set and
  testing set to make the code more readable (resulting in 6 different
  shared variables).
@@ -104,7 +104,7 @@ MNIST Dataset
  Since now the data is in one variable, and a minibatch is defined as a
  slice of that variable, it comes more natural to define a minibatch by
  indicating its index and its size. In our setup the batch size stays constant
- through out the execution of the code, therefore a function will actually
+ throughout the execution of the code, therefore a function will actually
  require only the index to identify on which datapoints to work.
  The code below shows how to store your data and how to
  access a minibatch:
@@ -141,8 +141,8 @@ MNIST Dataset
 
     # accessing the third minibatch of the training set
 
-    data  = train_set_x[2 * 500: 3 * 500]
-    label = train_set_y[2 * 500: 3 * 500]
+    data  = train_set_x[2 * batch_size: 3 * batch_size]
+    label = train_set_y[2 * batch_size: 3 * batch_size]
 
 
 The data has to be stored as floats on the GPU ( the right
