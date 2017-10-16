@@ -25,7 +25,9 @@ training them on a GPU.
 The algorithm tutorials have some prerequisites.  You should know some python,
 and be familiar with numpy. Since this tutorial is about using Theano, you
 should read over the `Theano basic tutorial`_ first.  Once you've done that,
-read through our :ref:`gettingstarted` chapter -- it introduces the notation, and [downloadable] datasets used in the algorithm tutorials, and the way we do optimization by stochastic gradient descent.  
+read through our :ref:`gettingstarted` chapter -- it introduces the notation, and downloadable datasets used in the algorithm tutorials, and the way we do optimization by stochastic gradient descent.
+
+The code is available on the `Deep Learning Tutorial repositories <https://github.com/lisa-lab/DeepLearningTutorials>`_.
 
 The purely supervised learning algorithms are meant to be read in order:
 
@@ -63,3 +65,6 @@ Energy-based recurrent neural network (RNN-RBM):
 .. _Theano basic tutorial: http://deeplearning.net/software/theano/tutorial
 
 .. _Contractive auto-encoders: https://github.com/lisa-lab/DeepLearningTutorials/blob/master/code/cA.py
+
+Note that the tutorials here are all compatible with Python 2 and 3, with the exception of :ref:`rnnrbm` which is only available for Python 2.
+

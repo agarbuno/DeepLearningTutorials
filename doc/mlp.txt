@@ -90,8 +90,8 @@ The set of parameters to learn is the set :math:`\theta =
 \{W^{(2)},b^{(2)},W^{(1)},b^{(1)}\}`.  Obtaining the gradients
 :math:`\partial{\ell}/\partial{\theta}` can be achieved through the
 **backpropagation algorithm** (a special case of the chain-rule of derivation).
-Thankfully, since Theano performs automatic differentation, we will not need to
-cover this in the tutorial !
+Thankfully, since Theano performs automatic differentiation, we will not need to
+cover this in the tutorial!
 
 
 Going from logistic regression to MLP
@@ -178,13 +178,13 @@ The code below shows how this can be done, in a way which is analogous to our pr
 
 .. literalinclude:: ../code/mlp.py
 
-The user can then run the code by calling :
+The user can then run the code by calling:
 
 .. code-block:: bash
 
     python code/mlp.py
 
-The output one should expect is of the form :
+The output one should expect is of the form:
 
 .. code-block:: bash
 

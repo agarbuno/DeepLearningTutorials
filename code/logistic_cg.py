@@ -33,6 +33,7 @@ References:
 
 
 """
+from __future__ import print_function, division
 __docformat__ = 'restructedtext en'
 
 
@@ -165,9 +166,9 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
 
     batch_size = 600    # size of the minibatch
 
-    n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_test_batches = test_set_x.get_value(borrow=True).shape[0] / batch_size
+    n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
+    n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
+    n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
 
     n_in = 28 * 28  # number of input units
     n_out = 10  # number of output units
@@ -175,7 +176,7 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
     ######################
     # BUILD ACTUAL MODEL #
     ######################
-    print '... building the model'
+    print('... building the model')
 
     # allocate symbolic variables for the data
     minibatch_offset = T.lscalar()  # offset to the start of a [mini]batch
@@ -239,7 +240,7 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
     def train_fn(theta_value):
         classifier.theta.set_value(theta_value, borrow=True)
         train_losses = [batch_cost(i * batch_size)
-                        for i in xrange(n_train_batches)]
+                        for i in range(n_train_batches)]
         return numpy.mean(train_losses)
 
     # creates a function that computes the average gradient of cost with
@@ -247,7 +248,7 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
     def train_fn_grad(theta_value):
         classifier.theta.set_value(theta_value, borrow=True)
         grad = batch_grad(0)
-        for i in xrange(1, n_train_batches):
+        for i in range(1, n_train_batches):
             grad += batch_grad(i * batch_size)
         return grad / n_train_batches
 
@@ -258,9 +259,9 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
         classifier.theta.set_value(theta_value, borrow=True)
         #compute the validation loss
         validation_losses = [validate_model(i * batch_size)
-                             for i in xrange(n_valid_batches)]
+                             for i in range(n_valid_batches)]
         this_validation_loss = numpy.mean(validation_losses)
-        print('validation error %f %%' % (this_validation_loss * 100.,))
+        print(('validation error %f %%' % (this_validation_loss * 100.,)))
 
         # check if it is better then best validation score got until now
         if this_validation_loss < validation_scores[0]:
@@ -268,7 +269,7 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
             # testing dataset
             validation_scores[0] = this_validation_loss
             test_losses = [test_model(i * batch_size)
-                           for i in xrange(n_test_batches)]
+                           for i in range(n_test_batches)]
             validation_scores[1] = numpy.mean(test_losses)
 
     ###############
@@ -288,17 +289,13 @@ def cg_optimization_mnist(n_epochs=50, mnist_pkl_gz='mnist.pkl.gz'):
         maxiter=n_epochs
     )
     end_time = timeit.default_timer()
-    print(
-        (
-            'Optimization complete with best validation score of %f %%, with '
-            'test performance %f %%'
-        )
-        % (validation_scores[0] * 100., validation_scores[1] * 100.)
+    print(('Optimization complete with best validation score of %f %%, with '
+           'test performance %f %%'
+           ) % (validation_scores[0] * 100., validation_scores[1] * 100.)
     )
 
-    print >> sys.stderr, ('The code for file ' +
-                          os.path.split(__file__)[1] +
-                          ' ran for %.1fs' % ((end_time - start_time)))
+    print('The code for file ' + os.path.split(__file__)[1] +
+          ' ran for %.1fs' % (end_time - start_time), file=sys.stderr)
 
 
 if __name__ == '__main__':

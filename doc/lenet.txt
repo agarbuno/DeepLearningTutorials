@@ -7,7 +7,7 @@ Convolutional Neural Networks (LeNet)
     This section assumes the reader has already read through :doc:`logreg` and
     :doc:`mlp`. Additionally, it uses the following new Theano functions and concepts:
     `T.tanh`_, `shared variables`_, `basic arithmetic ops`_, `T.grad`_,
-    `floatX`_, `downsample`_ , `conv2d`_, `dimshuffle`_. If you intend to run the
+    `floatX`_, `pool`_ , `conv2d`_, `dimshuffle`_. If you intend to run the
     code on GPU also read `GPU`_.
 
     To run this example on a GPU, you need a good GPU. It needs
@@ -35,7 +35,7 @@ Convolutional Neural Networks (LeNet)
 
 .. _GPU: http://deeplearning.net/software/theano/tutorial/using_gpu.html
 
-.. _downsample: http://deeplearning.net/software/theano/library/tensor/signal/downsample.html
+.. _pool: http://deeplearning.net/software/theano/library/tensor/signal/pool.html
 
 .. _conv2d: http://deeplearning.net/software/theano/library/tensor/signal/conv.html#module-conv
 
@@ -196,7 +196,7 @@ one of Figure 1. The input consists of 3 features maps (an RGB color image) of s
 
         import theano
         from theano import tensor as T
-        from theano.tensor.nnet import conv
+        from theano.tensor.nnet import conv2d
 
         import numpy
 
@@ -226,7 +226,7 @@ one of Figure 1. The input consists of 3 features maps (an RGB color image) of s
                     dtype=input.dtype), name ='b')
 
         # build symbolic expression that computes the convolution of input with filters in w
-        conv_out = conv.conv2d(input, W)
+        conv_out = conv2d(input, W)
 
         # build symbolic expression to add bias and apply activation function, i.e. produce neural net layer output
         # A few words on ``dimshuffle`` :
@@ -320,7 +320,7 @@ Max-pooling is useful in vision for two reasons:
      "smart" way of reducing the dimensionality of intermediate representations.
 
 Max-pooling is done in Theano by way of
-``theano.tensor.signal.downsample.max_pool_2d``. This function takes as input
+``theano.tensor.signal.pool.pool_2d``. This function takes as input
 an N dimensional tensor (where N >= 2) and a downscaling factor and performs
 max-pooling over the 2 trailing dimensions of the tensor.
 
@@ -328,11 +328,11 @@ An example is worth a thousand words:
 
 .. code-block:: python
 
-    from theano.tensor.signal import downsample
+    from theano.tensor.signal import pool
 
     input = T.dtensor4('input')
     maxpool_shape = (2, 2)
-    pool_out = downsample.max_pool_2d(input, maxpool_shape, ignore_border=True)
+    pool_out = pool.pool_2d(input, maxpool_shape, ignore_border=True)
     f = theano.function([input],pool_out)
 
     invals = numpy.random.RandomState(1).rand(3, 2, 5, 5)
@@ -340,7 +340,7 @@ An example is worth a thousand words:
     print 'invals[0, 0, :, :] =\n', invals[0, 0, :, :]
     print 'output[0, 0, :, :] =\n', f(invals)[0, 0, :, :]
 
-    pool_out = downsample.max_pool_2d(input, maxpool_shape, ignore_border=False)
+    pool_out = pool.pool_2d(input, maxpool_shape, ignore_border=False)
     f = theano.function([input],pool_out)
     print 'With ignore_border set to False:'
     print 'invals[1, 0, :, :] =\n ', invals[1, 0, :, :]
@@ -404,7 +404,7 @@ to be compatible with our previous MLP implementation.
     Note that the term "convolution" could corresponds to different mathematical operations:
 
     1. `theano.tensor.nnet.conv2d
-       <http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv.conv2d>`_,
+       <http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv2d>`_,
        which is the most common one in almost all of the recent published
        convolutional models.
        In this operation, each output feature map is connected to each
@@ -543,7 +543,7 @@ the task.
 
 Filter Shape
 ************
-Common filter shapes found in the litterature vary greatly, usually based on
+Common filter shapes found in the literature vary greatly, usually based on
 the dataset. Best results on MNIST-sized images (28x28) are usually in the 5x5
 range on the first layer, while natural image datasets (often with hundreds of pixels in each
 dimension) tend to use larger first-layer filters of shape 12x12 or 15x15.

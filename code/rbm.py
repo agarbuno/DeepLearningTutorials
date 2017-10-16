@@ -4,6 +4,9 @@ Boltzmann Machines (BMs) are a particular form of energy-based model which
 contain hidden variables. Restricted Boltzmann Machines further restrict BMs
 to those without visible-visible and hidden-hidden connections.
 """
+
+from __future__ import print_function
+
 import timeit
 
 try:
@@ -17,7 +20,7 @@ import theano
 import theano.tensor as T
 import os
 
-from theano.tensor.shared_randomstreams import RandomStreams
+from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from utils import tile_raster_images
 from logistic_sgd import load_data
@@ -254,7 +257,8 @@ class RBM(object):
             # chain_start is the initial state corresponding to the
             # 6th output
             outputs_info=[None, None, None, None, None, chain_start],
-            n_steps=k
+            n_steps=k,
+            name="gibbs_hvh"
         )
         # start-snippet-3
         # determine gradients on RBM parameters
@@ -384,7 +388,7 @@ def test_rbm(learning_rate=0.1, training_epochs=15,
     test_set_x, test_set_y = datasets[2]
 
     # compute number of minibatches for training, validation and testing
-    n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
+    n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
 
     # allocate symbolic variables for the data
     index = T.lscalar()    # index to a [mini]batch
@@ -431,14 +435,14 @@ def test_rbm(learning_rate=0.1, training_epochs=15,
     start_time = timeit.default_timer()
 
     # go through training epochs
-    for epoch in xrange(training_epochs):
+    for epoch in range(training_epochs):
 
         # go through the training set
         mean_cost = []
-        for batch_index in xrange(n_train_batches):
+        for batch_index in range(n_train_batches):
             mean_cost += [train_rbm(batch_index)]
 
-        print 'Training epoch %d, cost is ' % epoch, numpy.mean(mean_cost)
+        print('Training epoch %d, cost is ' % epoch, numpy.mean(mean_cost))
 
         # Plot filters after each training epoch
         plotting_start = timeit.default_timer()
@@ -493,7 +497,8 @@ def test_rbm(learning_rate=0.1, training_epochs=15,
     ) = theano.scan(
         rbm.gibbs_vhv,
         outputs_info=[None, None, None, None, None, persistent_vis_chain],
-        n_steps=plot_every
+        n_steps=plot_every,
+        name="gibbs_vhv"
     )
 
     # add to updates the shared variable that takes care of our persistent
@@ -518,11 +523,11 @@ def test_rbm(learning_rate=0.1, training_epochs=15,
         (29 * n_samples + 1, 29 * n_chains - 1),
         dtype='uint8'
     )
-    for idx in xrange(n_samples):
+    for idx in range(n_samples):
         # generate `plot_every` intermediate samples that we discard,
         # because successive samples in the chain are too correlated
         vis_mf, vis_sample = sample_fn()
-        print ' ... plotting sample ', idx
+        print(' ... plotting sample %d' % idx)
         image_data[29 * idx:29 * idx + 28, :] = tile_raster_images(
             X=vis_mf,
             img_shape=(28, 28),
